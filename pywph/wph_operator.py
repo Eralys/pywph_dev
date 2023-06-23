@@ -29,7 +29,7 @@ class WPHOp(torch.nn.Module):
     Wavelet Phase Harmonic (WPH) operator.
     """
     
-    def __init__(self, M, N, J, L=4, cplx=False,
+    def __init__(self, M, N, J, L=4, cplx=False, full_angle=False,
                  lp_filter_cls=GaussianFilter, bp_filter_cls=BumpSteerableWavelet,
                  j_min=0, dn=0, A=4,
                  cut_x_param=1/2, cut_y_param=1/2,
@@ -50,6 +50,9 @@ class WPHOp(torch.nn.Module):
         cplx : bool, optional
             Set it to true if the WPHOp instance will ever apply to complex data.
             This would load in memory the whole set of bandpass filters.
+            The default is False.
+        full_angle : bool, optional
+            Set it to true if to compute every t1 and t2 coefficients.
             The default is False.
         lp_filter_cls : class, optional
             Class corresponding to the low-pass filter. The default is GaussianFilter.
@@ -78,6 +81,9 @@ class WPHOp(torch.nn.Module):
         super().__init__()
         self.M, self.N, self.J, self.L, self.cplx, self.j_min = M, N, J, L, cplx, j_min
         self.dn, self.A = dn, A
+        self.full_angle = full_angle
+        if self.full_angle:
+            self.cplx = True
         self.precision = precision
         self.device = device
 
@@ -398,7 +404,7 @@ class WPHOp(torch.nn.Module):
                             t1_range = range(self.L) # Only L because of the pi-periodicity of these moments
                         else:
                             t1_range = range(2 * self.L) # Factor 2 for cross-moments symmetry
-                        for t1 in t1_range:
+                        for t1 in range(2 * self.L) if self.full_angle else t1_range:
                             dn_eff = get_dn_eff(j1)
                             for n in range(dn_eff + 1):
                                 if n == 0:
@@ -432,7 +438,7 @@ class WPHOp(torch.nn.Module):
                                 t2_range = chain(range(t1 - dl, t1 + dl), range(t1 + self.L - dl, t1 + self.L + dl))
                             else:
                                 t2_range = range(t1 - dl, t1 + dl)
-                            for t2 in t2_range:
+                            for t2 in range(2 * self.L) if self.full_angle else t2_range:
                                 # No translation here by default
                                 wph_indices.append([j1, t1, 0, j2, t2 % ((1 + self.cplx) * self.L), 0, 0, 0, 0])
                                 cnt += 1
@@ -451,7 +457,7 @@ class WPHOp(torch.nn.Module):
                                 t2_range = chain(range(t1 - dl, t1 + dl), range(t1 + self.L - dl, t1 + self.L + dl))
                             else:
                                 t2_range = range(t1 - dl, t1 + dl)
-                            for t2 in t2_range:
+                            for t2 in range(2 * self.L) if self.full_angle else t2_range:
                                 if t1 == t2:
                                     dn_eff = get_dn_eff(j2)
                                     for n in range(dn_eff + 1):
@@ -478,7 +484,7 @@ class WPHOp(torch.nn.Module):
                                 t2_range = chain(range(t1 - dl, t1 + dl), range(t1 + self.L - dl, t1 + self.L + dl))
                             else:
                                 t2_range = range(t1 - dl, t1 + dl)
-                            for t2 in t2_range:
+                            for t2 in range(2 * self.L) if self.full_angle else t2_range:
                                 if t1 == t2:
                                     dn_eff = get_dn_eff(j2)
                                     for n in range(dn_eff + 1):
