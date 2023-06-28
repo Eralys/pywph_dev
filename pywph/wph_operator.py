@@ -436,7 +436,8 @@ class WPHOp(torch.nn.Module):
                 self._moments_indices[1:] += cnt
             elif clas == "C00": # Non default moments
                 for j1 in range(self.j_min, self.J):
-                    for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                    #for j2 in range(j1+1, min(j1 + 1 + dj, self.J)):
+                    for j2 in range(j1, min(j1 + 1 + dj, self.J)):
                         for t1 in range((1 + self.cplx) * self.L):
                             if self.cplx:
                                 t2_range = chain(range(t1 - dl, t1 + dl), range(t1 + self.L - dl, t1 + self.L + dl))
@@ -455,7 +456,8 @@ class WPHOp(torch.nn.Module):
                 self._moments_indices[2:] += cnt
             elif clas == "C01":
                 for j1 in range(self.j_min, self.J):
-                    for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                    #for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                    for j2 in range(j1, min(j1 + 1 + dj, self.J)):
                         for t1 in range((1 + self.cplx) * self.L):
                             if self.cplx:
                                 t2_range = chain(range(t1 - dl, t1 + dl), range(t1 + self.L - dl, t1 + self.L + dl))
@@ -482,6 +484,7 @@ class WPHOp(torch.nn.Module):
                 self._moments_indices[3:] += cnt
             elif clas == "C10":
                 for j1 in range(self.j_min, self.J):
+                    #for j2 in range(j1, min(j1 + 1 + dj, self.J)):
                     for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
                         for t1 in range((1 + self.cplx) * self.L):
                             if self.cplx:
@@ -503,7 +506,8 @@ class WPHOp(torch.nn.Module):
                 self._moments_indices[3:] += cnt
             elif clas == "Cphase":
                 for j1 in range(self.j_min, self.J):
-                    for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                    #for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                    for j2 in range(j1, min(j1 + 1 + dj, self.J)):
                         for t1 in range((1 + self.cplx) * self.L):
                             dn_eff = min(self.J - 1 - j2, dn)
                             for n in range(dn_eff + 1):
@@ -516,7 +520,8 @@ class WPHOp(torch.nn.Module):
                 self._moments_indices[4:] += cnt
             elif clas == "Cphase_inv":
                 for j1 in range(self.j_min, self.J):
-                    for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                   #for j2 in range(j1 + 1, min(j1 + 1 + dj, self.J)):
+                   for j2 in range(j1, min(j1 + 1 + dj, self.J)):
                         for t1 in range((1 + self.cplx) * self.L):
                             dn_eff = get_dn_eff(j2)
                             for n in range(dn_eff + 1):
