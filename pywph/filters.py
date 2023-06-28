@@ -79,6 +79,131 @@ class GaussianFilter (Filter):
             self.data = np.fft.fft2(self.data).real
 
 
+class GaborFilter (Filter):
+    """
+    Gabor filter.
+    
+    We make sure that the gabor filters have an (approximate?) unit L1-norm.
+    """
+    
+    def __init__(self, M, N, j, theta, gamma=1.0, sigma0=1.0, k0=2*np.pi, fourier=False):
+        """
+        Constructor.
+
+        Parameters
+        ----------
+        M : int
+            Height.
+        N : int
+            Width.
+        j : int
+            Dyadic scale index.
+        theta : float
+            Rotation angle.
+        gamma : float, optional
+            Aspect ratio of the envelope. The default is 1.0.
+        sigma0 : float, optional
+            Standard deviation of the envelope before its dilation. The default is 1.0.
+        k0 : float, optional
+            Central wavenumber before the dilation. The default is 2 * np.pi.
+        fourier : bool, optional
+            Do we want to store the filter in Fourier space or not? The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.fourier = fourier
+        super().__init__(M, N, dtype=complex) 
+        self.j = j
+        self.theta = theta
+        self.gamma = gamma
+        self.sigma0 = sigma0
+        self.sigma = self.sigma0 * 2 ** j
+        self.k0 = k0
+        self.k = self.k0 / 2 ** j
+        self.build()
+        
+    def build(self):
+        """
+        Build the filter for a given set of parameters.
+        """
+        R = np.array([[np.cos(self.theta), -np.sin(self.theta)], [np.sin(self.theta), np.cos(self.theta)]])
+        RInv = np.array([[np.cos(self.theta), np.sin(self.theta)], [-np.sin(self.theta), np.cos(self.theta)]])
+        D = np.array([[1, 0], [0, self.gamma ** 2]])
+        curv = np.dot(R, np.dot(D, RInv)) / (2 * self.sigma ** 2)
+        
+        for ex in [-2, -1, 0, 1]:
+            for ey in [-2, -1, 0, 1]:
+                [xx, yy] = np.mgrid[ex * self.M:self.M + ex * self.M, ey * self.N:self.N + ey * self.N]
+                arg = -(curv[0, 0] * xx ** 2 + (curv[0, 1] + curv[1, 0]) * xx * yy + curv[1, 1] * yy ** 2) + 1.j * (xx * self.k * np.cos(self.theta) + yy * self.k * np.sin(self.theta))
+                self.data += np.exp(arg)
+                
+        normFactor = 2 * np.pi * self.sigma ** 2 / self.gamma
+        self.data /= normFactor
+        if self.fourier:
+            self.data = np.fft.fft2(self.data)
+
+class MorletWavelet (Filter):
+    """
+    Morlet Wavelet.
+    
+    We make sure that the wavelets have zero-mean and an (approximate?) unit L1-norm.
+    """
+    
+    def __init__(self, M, N, j, theta, gamma=1.0, L=None, sigma0=1.0, k0=2*np.pi, fourier=False):
+        """
+        Constructor.
+
+        Parameters
+        ----------
+        M : int
+            Height.
+        N : int
+            Width.
+        j : int
+            Dyadic scale index.
+        theta : float
+            Rotation angle.
+        L : int, optional
+            For standardisation purpose, no use
+        gamma : float, optional
+            Aspect ratio of the envelope. The default is 1.0.
+        sigma0 : float, optional
+            Standard deviation of the envelope before the dilation. The default is 1.0.
+        k0 : float, optional
+            Central wavenumber before the dilation. The default is 2 * np.pi.
+        fourier : bool, optional
+            Do we want to store the filter in Fourier space or not? The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.fourier = fourier
+        super().__init__(M, N, dtype=complex) 
+        self.j = j
+        self.theta = theta
+        self.gamma = gamma
+        self.sigma0 = sigma0
+        self.sigma = self.sigma0 * 2 ** j
+        self.k0 = k0
+        self.build()
+        
+    def build(self):
+        """
+        Build the filter for a given set of parameters.
+        """
+        gabor = GaborFilter(self.M, self.N, self.j, self.theta, self.gamma, self.sigma0, self.k0)
+        gaussian = GaussianFilter(self.M, self.N, self.j, self.theta, self.gamma, self.sigma0)
+        K = np.sum(gabor.data) / np.sum(gaussian.data)
+        self.data = gabor.data - K * gaussian.data
+        if self.fourier:
+            self.data = np.real(np.fft.fft2(self.data))
+
+
 class BumpSteerableWavelet (Filter):
     """
     Bump-steerable wavelet.

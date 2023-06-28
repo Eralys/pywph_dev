@@ -8,7 +8,7 @@ from itertools import chain
 from itertools import product
 from functools import partial
 
-from .filters import BumpIsotropicWavelet, GaussianFilter, BumpSteerableWavelet
+from .filters import BumpIsotropicWavelet, GaussianFilter, BumpSteerableWavelet, MorletWavelet
 from .utils import to_torch, get_memory_available, fft, ifft, phase_harmonics, power_harmonics
 from .wph import WPH
 
@@ -104,6 +104,10 @@ class WPHOp(torch.nn.Module):
         self.load_model()
         self.lp_filter_cls = lp_filter_cls
         self.bp_filter_cls = bp_filter_cls
+        if self.bp_filter_cls == "Morlet":
+            self.bp_filter_cls = MorletWavelet
+        elif self.bp_filter_cls == "Bump":
+            self.bp_filter_cls = BumpSteerableWavelet
         self.load_filters()
         
         self.preconfigured = False # Precomputation configuration
